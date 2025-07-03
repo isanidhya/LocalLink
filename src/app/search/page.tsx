@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Frown } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function SearchPage() {
     const [providers, setProviders] = useState<Provider[]>([]);
