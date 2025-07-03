@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, FirebaseError } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,16 @@ const AuthForm = () => {
       toast({ title: "OTP Sent", description: "Check your phone for the one-time password." });
     } catch (error) {
       console.error("Error sending OTP:", error);
-      toast({ variant: "destructive", title: "Error", description: "Failed to send OTP. Check number and try again." });
+      let title = "Error";
+      let description = "Failed to send OTP. Check number and try again.";
+
+      if (error instanceof FirebaseError && error.code === 'auth/api-key-not-valid') {
+        title = "Configuration Error";
+        description = "Firebase setup is incomplete. Please check your API keys in the .env file.";
+      }
+      
+      toast({ variant: "destructive", title, description });
+      
       appVerifier.render().then((widgetId) => {
         // @ts-ignore
         grecaptcha.reset(widgetId);
@@ -59,7 +68,7 @@ const AuthForm = () => {
     }
   };
 
-  const onOtpSubmit = async (e: React.FormEvent) => {
+  const onOtpSubmit = async (e: React.Event) => {
     e.preventDefault();
     setLoading(true);
     if (!window.confirmationResult) return;
