@@ -28,19 +28,33 @@ const AuthForm = () => {
   const redirect = searchParams.get('redirect') || '/';
   
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': () => {
-                // reCAPTCHA solved
-            },
-        });
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    if (apiKey && !apiKey.startsWith('your_')) {
+      if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              'size': 'invisible',
+              'callback': () => {
+                  // reCAPTCHA solved
+              },
+          });
+      }
     }
   }, []);
 
   const onSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    if (!apiKey || apiKey.startsWith('your_')) {
+        toast({
+            variant: "destructive",
+            title: "Configuration Error",
+            description: "Firebase setup is incomplete. Please update your .env file.",
+        });
+        setLoading(false);
+        return;
+    }
     
     const appVerifier = window.recaptchaVerifier;
     const formattedPhoneNumber = `+${phoneNumber.replace(/\D/g, '')}`;
@@ -55,9 +69,9 @@ const AuthForm = () => {
       let title = "Error";
       let description = "Failed to send OTP. Check number and try again.";
 
-      if (error instanceof FirebaseError && error.code === 'auth/api-key-not-valid') {
-        title = "Configuration Error";
-        description = "Firebase setup is incomplete. Please check your API keys in the .env file.";
+      if (error instanceof FirebaseError && error.code === 'auth/invalid-phone-number') {
+        title = "Invalid Phone Number";
+        description = "Please check the number and try again.";
       }
       
       toast({ variant: "destructive", title, description });
