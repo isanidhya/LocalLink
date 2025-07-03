@@ -28,12 +28,14 @@ const AuthForm = () => {
   const redirect = searchParams.get('redirect') || '/';
   
   useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
-      'callback': () => {
-        // reCAPTCHA solved
-      },
-    });
+    if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => {
+                // reCAPTCHA solved
+            },
+        });
+    }
   }, []);
 
   const onSignInSubmit = async (e: React.FormEvent) => {
@@ -59,11 +61,6 @@ const AuthForm = () => {
       }
       
       toast({ variant: "destructive", title, description });
-      
-      appVerifier.render().then((widgetId) => {
-        // @ts-ignore
-        grecaptcha.reset(widgetId);
-      });
     } finally {
       setLoading(false);
     }
