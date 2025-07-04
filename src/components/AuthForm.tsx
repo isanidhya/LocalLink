@@ -69,9 +69,14 @@ const AuthForm = () => {
       let title = "Error";
       let description = "Failed to send OTP. Check number and try again.";
 
-      if (error instanceof FirebaseError && error.code === 'auth/invalid-phone-number') {
-        title = "Invalid Phone Number";
-        description = "Please check the number and try again.";
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/invalid-phone-number') {
+          title = "Invalid Phone Number";
+          description = "Please check the number and try again.";
+        } else if (error.code === 'auth/operation-not-allowed') {
+          title = "Authentication Method Disabled";
+          description = "Phone number sign-in is not enabled for this project. Please enable it in your Firebase console.";
+        }
       }
       
       toast({ variant: "destructive", title, description });
