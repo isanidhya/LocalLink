@@ -31,7 +31,7 @@ export default function LoginPage() {
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">Login or Sign Up</CardTitle>
-                    <CardDescription>Enter your phone number to continue. We'll send you a one-time password.</CardDescription>
+                    <CardDescription>Choose your preferred method to continue.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AuthForm />
