@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,11 @@ import { guideListingCreation } from '@/ai/flows/guide-listing-creation';
 import { suggestListings } from '@/ai/flows/suggest-listings';
 import { Bot, User as UserIcon, Loader2, Send } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
 
 type Message = {
-  text: string;
+  text?: string;
+  component?: ReactNode;
   sender: 'user' | 'bot';
 };
 
@@ -43,7 +45,31 @@ export default function Chatbot() {
         const lowerUserInput = userInput.toLowerCase();
         if (lowerUserInput.includes('offer') || lowerUserInput.includes('sell') || lowerUserInput.includes('provide') || lowerUserInput.includes('create')) {
             response = await guideListingCreation({ userInput });
-            setMessages([...newMessages, { text: response.listingGuidance, sender: 'bot' }]);
+            
+            const cleanData: { [key: string]: string } = {};
+            for (const key in response.extractedData) {
+              const value = response.extractedData[key as keyof typeof response.extractedData];
+              if (value) {
+                cleanData[key] = value;
+              }
+            }
+
+            const query = new URLSearchParams(cleanData).toString();
+            const addListingUrl = `/add-listing?${query}`;
+
+            const finalMessages: Message[] = [
+                ...newMessages,
+                { sender: 'bot', text: response.responseText },
+                {
+                    sender: 'bot',
+                    component: (
+                        <Button asChild>
+                            <Link href={addListingUrl}>Finalize Your Listing</Link>
+                        </Button>
+                    ),
+                },
+            ];
+            setMessages(finalMessages);
         } else {
             response = await suggestListings({ query: userInput });
             const suggestionsText = response.suggestions.length > 0 
@@ -73,7 +99,8 @@ export default function Chatbot() {
                                 </Avatar>
                             )}
                             <div className={`rounded-lg px-4 py-2 max-w-[80%] shadow-sm ${message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                                {message.text && <p className="text-sm whitespace-pre-wrap">{message.text}</p>}
+                                {message.component}
                             </div>
                             {message.sender === 'user' && (
                                 <Avatar>

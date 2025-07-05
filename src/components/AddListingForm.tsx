@@ -28,7 +28,12 @@ const formSchema = z.object({
 
 type AddListingFormValues = z.infer<typeof formSchema>;
 
-export default function AddListingForm({ userId }: { userId: string }) {
+interface AddListingFormProps {
+  userId: string;
+  initialData?: Partial<AddListingFormValues>;
+}
+
+export default function AddListingForm({ userId, initialData = {} }: AddListingFormProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -43,6 +48,7 @@ export default function AddListingForm({ userId }: { userId: string }) {
       availability: "",
       charges: "",
       contact: "",
+      ...initialData,
     },
   });
 
