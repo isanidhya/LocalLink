@@ -10,6 +10,7 @@ export interface Provider {
   charges: string;
   contact: string;
   imageUrl?: string;
+  imageHint?: string;
   createdAt: Timestamp;
   userId: string;
 }

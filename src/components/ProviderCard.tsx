@@ -30,7 +30,13 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
         <Card className="flex flex-col h-full overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 duration-300">
             <div className="relative h-48 w-full">
                 {provider.imageUrl ? (
-                    <Image src={provider.imageUrl} alt={provider.serviceName} fill className="object-cover" />
+                    <Image
+                        src={provider.imageUrl}
+                        alt={provider.serviceName}
+                        fill
+                        className="object-cover"
+                        {...(provider.imageHint && { 'data-ai-hint': provider.imageHint })}
+                    />
                 ) : (
                     <div className="h-full w-full bg-accent/50 flex items-center justify-center">
                         {getIconForService(provider.serviceName)}
