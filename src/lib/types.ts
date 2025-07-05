@@ -14,3 +14,11 @@ export interface Provider {
   createdAt: Timestamp;
   userId: string;
 }
+
+export interface UserProfile {
+  displayName: string;
+  email: string;
+  location: string;
+  profileCompleted: boolean;
+  createdAt: any;
+}

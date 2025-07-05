@@ -5,11 +5,31 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AddListingPage() {
-    const { user, loading } = useAuth();
+    const { user, userProfile, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                // Not logged in, redirect to login
+                const redirectQuery = new URLSearchParams(window.location.search).toString();
+                router.push(`/login?redirect=/add-listing${redirectQuery ? '&' + redirectQuery : ''}`);
+            } else if (!userProfile?.profileCompleted) {
+                // Logged in, but profile is not complete
+                toast({
+                    variant: "destructive",
+                    title: "Profile Incomplete",
+                    description: "Please complete your profile before adding a listing.",
+                });
+                router.push('/profile');
+            }
+        }
+    }, [user, userProfile, loading, router, toast]);
 
     // Create initial data from search params, only if they exist
     const initialData: {[key: string]: any} = {
@@ -25,14 +45,7 @@ export default function AddListingPage() {
     // Remove undefined keys so they don't override form defaults with empty strings
     Object.keys(initialData).forEach(key => initialData[key] === undefined && delete initialData[key]);
 
-    useEffect(() => {
-        if (!loading && !user) {
-            const redirectQuery = new URLSearchParams(window.location.search).toString();
-            router.push(`/login?redirect=/add-listing${redirectQuery ? '&' + redirectQuery : ''}`);
-        }
-    }, [user, loading, router]);
-
-    if (loading || !user) {
+    if (loading || !user || !userProfile?.profileCompleted) {
         return (
             <div className="max-w-2xl mx-auto">
                 <Skeleton className="h-8 w-1/3 mb-6" />

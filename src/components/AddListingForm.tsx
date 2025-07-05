@@ -14,12 +14,11 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { firestore, storage } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name is too short").max(50, "Name is too long"),
   serviceName: z.string().min(3, "Service name is too short").max(100),
   description: z.string().min(10, "Description is too short").max(500),
-  location: z.string().min(2, "Location is required"),
   availability: z.string().min(2, "Availability is required"),
   charges: z.string().min(1, "Charges are required"),
   contact: z.string().min(10, "A valid contact is required"),
@@ -37,14 +36,13 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { userProfile } = useAuth();
 
   const form = useForm<AddListingFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       serviceName: "",
       description: "",
-      location: "",
       availability: "",
       charges: "",
       contact: "",
@@ -53,6 +51,10 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
   });
 
   const onSubmit = async (data: AddListingFormValues) => {
+    if (!userProfile?.profileCompleted) {
+        toast({ variant: "destructive", title: "Error", description: "Your profile is not complete." });
+        return;
+    }
     setLoading(true);
     try {
       let imageUrl = "";
@@ -64,10 +66,10 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
 
       await addDoc(collection(firestore, "providers"), {
         userId,
-        name: data.name,
+        name: userProfile.displayName,
+        location: userProfile.location,
         serviceName: data.serviceName,
         description: data.description,
-        location: data.location,
         availability: data.availability,
         charges: data.charges,
         contact: data.contact,
@@ -88,13 +90,6 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField control={form.control} name="name" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Your Name</FormLabel>
-              <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-        )} />
         <FormField control={form.control} name="serviceName" render={({ field }) => (
             <FormItem>
               <FormLabel>Service/Product Name</FormLabel>
@@ -106,13 +101,6 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl><Textarea placeholder="Describe your service or product in detail." {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-        )} />
-        <FormField control={form.control} name="location" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location (PIN Code or Area)</FormLabel>
-              <FormControl><Input placeholder="e.g., 110001 or Connaught Place" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
         )} />
