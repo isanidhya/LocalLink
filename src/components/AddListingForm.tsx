@@ -14,7 +14,6 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { firestore, storage } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   serviceName: z.string().min(3, "Service name is too short").max(100),
@@ -29,14 +28,15 @@ type AddListingFormValues = z.infer<typeof formSchema>;
 
 interface AddListingFormProps {
   userId: string;
+  name: string;
+  location: string;
   initialData?: Partial<AddListingFormValues>;
 }
 
-export default function AddListingForm({ userId, initialData = {} }: AddListingFormProps) {
+export default function AddListingForm({ userId, name, location, initialData = {} }: AddListingFormProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { userProfile } = useAuth();
 
   const form = useForm<AddListingFormValues>({
     resolver: zodResolver(formSchema),
@@ -51,10 +51,6 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
   });
 
   const onSubmit = async (data: AddListingFormValues) => {
-    if (!userProfile?.profileCompleted) {
-        toast({ variant: "destructive", title: "Error", description: "Your profile is not complete." });
-        return;
-    }
     setLoading(true);
     try {
       let imageUrl = "";
@@ -66,8 +62,8 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
 
       await addDoc(collection(firestore, "providers"), {
         userId,
-        name: userProfile.displayName,
-        location: userProfile.location,
+        name,
+        location,
         serviceName: data.serviceName,
         description: data.description,
         availability: data.availability,
@@ -78,7 +74,7 @@ export default function AddListingForm({ userId, initialData = {} }: AddListingF
       });
 
       toast({ title: "Success!", description: "Your listing has been created." });
-      router.push("/search");
+      router.push("/profile");
     } catch (error) {
       console.error("Error creating listing:", error);
       toast({ variant: "destructive", title: "Error", description: "Something went wrong." });

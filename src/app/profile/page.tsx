@@ -29,7 +29,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 
 export default function ProfilePage() {
-    const { user, userProfile, loading: authLoading } = useAuth();
+    const { user, userProfile, loading: authLoading, refetchUserProfile } = useAuth();
     const router = useRouter();
     const [listings, setListings] = useState<Provider[]>([]);
     const [listingsLoading, setListingsLoading] = useState(true);
@@ -97,11 +97,13 @@ export default function ProfilePage() {
                 profileCompleted: true,
             });
 
+            await refetchUserProfile();
+
             toast({
                 title: 'Profile Updated!',
                 description: 'Your information has been saved successfully.',
             });
-            window.location.reload();
+            
         } catch (error) {
             console.error('Error updating profile:', error);
             toast({

@@ -136,7 +136,12 @@ export default function AddListingPage() {
                     <p className="text-sm mt-1">Review the details our AI created for you, make any edits, and submit your listing!</p>
                 </div>
             )}
-            <AddListingForm userId={user.uid} initialData={initialData} />
+            <AddListingForm
+              userId={user.uid}
+              name={userProfile.displayName}
+              location={userProfile.location}
+              initialData={initialData}
+            />
         </div>
     );
 }
