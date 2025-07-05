@@ -138,8 +138,8 @@ export default function AddListingPage() {
             )}
             <AddListingForm
               userId={user.uid}
-              name={userProfile.displayName}
-              location={userProfile.location}
+              name={userProfile.displayName || ''}
+              location={userProfile.location || ''}
               initialData={initialData}
             />
         </div>
