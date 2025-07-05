@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -6,7 +7,17 @@ import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Wrench } from 'lucide-react';
+import { Menu, Wrench, User } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from '../ui/avatar';
+
 
 const Header = () => {
   const { user, loading } = useAuth();
@@ -28,15 +39,6 @@ const Header = () => {
       <Button variant="ghost" asChild>
         <Link href="/chatbot">AI Assistant</Link>
       </Button>
-      {!loading && (
-        user ? (
-          <Button onClick={handleSignOut}>Sign Out</Button>
-        ) : (
-          <Button asChild>
-            <Link href="/login">Login / Sign Up</Link>
-          </Button>
-        )
-      )}
     </>
   );
 
@@ -47,22 +49,57 @@ const Header = () => {
           <Wrench className="h-6 w-6 text-primary" />
           <span className="font-headline text-2xl font-bold">LocalLink</span>
         </Link>
-        <nav className="hidden md:flex items-center gap-2">
-          {navLinks}
-        </nav>
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <nav className="flex flex-col gap-4 pt-8">
-                {navLinks}
-              </nav>
-            </SheetContent>
-          </Sheet>
+        <div className='flex items-center gap-2'>
+            <nav className="hidden md:flex items-center gap-2">
+              {navLinks}
+            </nav>
+            {!loading && (
+                user ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="icon" className="rounded-full">
+                                <Avatar>
+                                    <AvatarFallback className='bg-primary/20 text-primary'>
+                                        <User />
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/profile')}>
+                                Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/add-listing')}>
+                                Offer Service
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleSignOut}>
+                                Sign Out
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                <Button asChild>
+                    <Link href="/login">Login / Sign Up</Link>
+                </Button>
+                )
+            )}
+            <div className="md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                  <nav className="flex flex-col gap-4 pt-8">
+                    {navLinks}
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
         </div>
       </div>
     </header>
