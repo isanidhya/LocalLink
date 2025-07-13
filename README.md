@@ -21,6 +21,68 @@ The project is built with a modern, full-stack setup leveraging Next.js, Firebas
 *   **AI:** [Google AI & Genkit](https://firebase.google.com/docs/genkit)
 *   **Forms:** [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
 
+## Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+*   Node.js (v18 or later recommended)
+*   npm
+
+### Installation
+
+1.  **Clone the repo:**
+    ```sh
+    git clone https://github.com/isanidhya/LocalLink.git
+    cd LocalLink
+    ```
+
+2.  **Install NPM packages:**
+    ```sh
+    npm install
+    ```
+
+3.  **Set up Firebase:**
+    *   Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com/).
+    *   Enable **Authentication** (with Email/Password provider) and **Firestore**.
+    *   Create a web app in your Firebase project and copy the configuration.
+    *   Create a `.env.local` file in the root of the project and add your Firebase configuration:
+        ```
+        NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
+        NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
+        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+        NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+        ```
+
+4.  **Run the development server:**
+    ```sh
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+
+## Dependencies
+
+This project relies on a number of key dependencies. It is important to ensure they are correctly installed and managed.
+
+*   `@opentelemetry/exporter-jaeger`: This is a production dependency and **must** be listed in the `dependencies` section of `package.json`, not `devDependencies`. An incorrect placement will cause deployment builds to fail.
+*   **Firebase SDK:** This project uses the Firebase Web SDK v9 (modular). Ensure you are using the correct syntax and that all Firebase-related packages are up to date to avoid version conflicts.
+
+## Deployment
+
+This project is optimized for deployment on [Vercel](https://vercel.com/).
+
+### Vercel Deployment
+
+1.  Push your code to a GitHub repository.
+2.  Go to the Vercel dashboard and import your repository.
+3.  Vercel will automatically detect that you are using Next.js and configure the build settings.
+4.  **Important:** Add your Firebase environment variables to the Vercel project settings. You can find these in your `.env.local` file.
+
+**Note:** Always ensure that any packages required for the *production build* are listed in the `dependencies` section of your `package.json` file.
+
 ## Design Philosophy
 
 The visual design aims to be warm and welcoming, encouraging community interaction.
@@ -29,6 +91,3 @@ The visual design aims to be warm and welcoming, encouraging community interacti
 *   **Background Color:** Very light, desaturated orange (`#FFF8F0`)
 *   **Typography:** 'Space Grotesk' for headlines and 'PT Sans' for body text to ensure clarity and readability.
 *   **Layout:** A clean, card-based design that is mobile-first and fully responsive.
-
----
-
