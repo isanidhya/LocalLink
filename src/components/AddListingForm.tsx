@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { firestore, storage } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -55,12 +55,12 @@ export default function AddListingForm({ userId, name, location, initialData = {
     try {
       let imageUrl = "";
       if (data.image) {
-        const imageRef = ref(storage, `providers/${userId}/${data.image.name}-${Date.now()}`);
+        const imageRef = ref(storage, `listings/${userId}/${data.image.name}-${Date.now()}`);
         const snapshot = await uploadBytes(imageRef, data.image);
         imageUrl = await getDownloadURL(snapshot.ref);
       }
 
-      await addDoc(collection(firestore, "providers"), {
+      await addDoc(collection(db, "listings"), {
         userId,
         name,
         location,

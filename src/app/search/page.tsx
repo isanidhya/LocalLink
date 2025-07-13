@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
-import { Provider } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { Listing } from '@/lib/types';
 import ProviderCard from '@/components/ProviderCard';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,56 +13,56 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
 
 export default function SearchPage() {
-    const [providers, setProviders] = useState<Provider[]>([]);
+    const [listings, setListings] = useState<Listing[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [serviceFilter, setServiceFilter] = useState('all');
     const { toast } = useToast();
 
     useEffect(() => {
-        const fetchProviders = async () => {
+        const fetchListings = async () => {
             setLoading(true);
             try {
-                const providersCollection = collection(firestore, 'providers');
-                const q = query(providersCollection, orderBy('createdAt', 'desc'));
+                const listingsCollection = collection(db, 'listings');
+                const q = query(listingsCollection, orderBy('createdAt', 'desc'));
                 const querySnapshot = await getDocs(q);
-                const providersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
-                setProviders(providersData);
+                const listingsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Listing));
+                setListings(listingsData);
             } catch (error) {
-                console.error("Error fetching providers:", error);
+                console.error("Error fetching listings:", error);
                 toast({
                     variant: "destructive",
                     title: "Error fetching data",
                     description: "Could not load listings from the database. Please try again later.",
                 });
-                setProviders([]);
+                setListings([]);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProviders();
-    }, []);
+        fetchListings();
+    }, [toast]);
 
     const uniqueServices = useMemo(() => {
-        const services = new Set(providers.map(p => p.serviceName));
+        const services = new Set(listings.map(p => p.serviceName));
         return ['all', ...Array.from(services)];
-    }, [providers]);
+    }, [listings]);
 
-    const filteredProviders = useMemo(() => {
-        return providers.filter(provider => {
+    const filteredListings = useMemo(() => {
+        return listings.filter(listing => {
             const lowerSearchTerm = searchTerm.toLowerCase();
             const matchesSearch = lowerSearchTerm === '' ||
-                provider.name.toLowerCase().includes(lowerSearchTerm) ||
-                provider.serviceName.toLowerCase().includes(lowerSearchTerm) ||
-                provider.description.toLowerCase().includes(lowerSearchTerm) ||
-                provider.location.toLowerCase().includes(lowerSearchTerm);
+                listing.name.toLowerCase().includes(lowerSearchTerm) ||
+                listing.serviceName.toLowerCase().includes(lowerSearchTerm) ||
+                listing.description.toLowerCase().includes(lowerSearchTerm) ||
+                listing.location.toLowerCase().includes(lowerSearchTerm);
 
-            const matchesFilter = serviceFilter === 'all' || provider.serviceName === serviceFilter;
+            const matchesFilter = serviceFilter === 'all' || listing.serviceName === serviceFilter;
 
             return matchesSearch && matchesFilter;
         });
-    }, [providers, searchTerm, serviceFilter]);
+    }, [listings, searchTerm, serviceFilter]);
     
     return (
         <div>
@@ -75,7 +75,7 @@ export default function SearchPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="flex-grow"
                 />
-                <Select value={serviceFilter} onValueChange={setServiceFilter} disabled={loading || providers.length === 0}>
+                <Select value={serviceFilter} onValueChange={setServiceFilter} disabled={loading || listings.length === 0}>
                     <SelectTrigger className="w-full md:w-[280px]">
                         <SelectValue placeholder="Filter by service type" />
                     </SelectTrigger>
@@ -91,10 +91,10 @@ export default function SearchPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Array.from({ length: 6 }).map((_, i) => <ProviderCardSkeleton key={i} />)}
                 </div>
-            ) : filteredProviders.length > 0 ? (
+            ) : filteredListings.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredProviders.map(provider => (
-                        <ProviderCard key={provider.id} provider={provider} />
+                    {filteredListings.map(listing => (
+                        <ProviderCard key={listing.id} provider={listing} />
                     ))}
                 </div>
             ) : (
