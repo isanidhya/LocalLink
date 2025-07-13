@@ -76,7 +76,7 @@ This project is optimized for deployment on [Vercel](https://vercel.com/).
 
 ### Vercel Deployment
 
-1.  Push your code to a GitHub repository.
+1.  Push your code to a GitHub repository. A new deployment will be triggered automatically.
 2.  Go to the Vercel dashboard and import your repository.
 3.  Vercel will automatically detect that you are using Next.js and configure the build settings.
 4.  **Important:** Add your Firebase environment variables to the Vercel project settings. You can find these in your `.env.local` file.
