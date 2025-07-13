@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Listing } from '@/lib/types';
 import ProviderCard from '@/components/ProviderCard';
@@ -23,17 +23,25 @@ export default function SearchPage() {
         const fetchListings = async () => {
             setLoading(true);
             try {
+                // Fetch without ordering to prevent issues with missing fields or indexes
                 const listingsCollection = collection(db, 'listings');
-                const q = query(listingsCollection, orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(q);
+                const querySnapshot = await getDocs(listingsCollection);
                 const listingsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Listing));
+
+                // Sort the listings on the client-side for resilience
+                listingsData.sort((a, b) => {
+                    const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+                    const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+                    return dateB - dateA; // Descending order
+                });
+                
                 setListings(listingsData);
             } catch (error) {
                 console.error("Error fetching listings:", error);
                 toast({
                     variant: "destructive",
                     title: "Error fetching data",
-                    description: "Could not load listings from the database. Please try again later.",
+                    description: "Could not load listings. Check Firestore security rules.",
                 });
                 setListings([]);
             } finally {
@@ -45,18 +53,20 @@ export default function SearchPage() {
     }, [toast]);
 
     const uniqueServices = useMemo(() => {
+        if (!listings) return ['all'];
         const services = new Set(listings.map(p => p.serviceName));
         return ['all', ...Array.from(services)];
     }, [listings]);
 
     const filteredListings = useMemo(() => {
+        if (!listings) return [];
         return listings.filter(listing => {
             const lowerSearchTerm = searchTerm.toLowerCase();
             const matchesSearch = lowerSearchTerm === '' ||
-                listing.name.toLowerCase().includes(lowerSearchTerm) ||
-                listing.serviceName.toLowerCase().includes(lowerSearchTerm) ||
-                listing.description.toLowerCase().includes(lowerSearchTerm) ||
-                listing.location.toLowerCase().includes(lowerSearchTerm);
+                (listing.name && listing.name.toLowerCase().includes(lowerSearchTerm)) ||
+                (listing.serviceName && listing.serviceName.toLowerCase().includes(lowerSearchTerm)) ||
+                (listing.description && listing.description.toLowerCase().includes(lowerSearchTerm)) ||
+                (listing.location && listing.location.toLowerCase().includes(lowerSearchTerm));
 
             const matchesFilter = serviceFilter === 'all' || listing.serviceName === serviceFilter;
 
@@ -102,7 +112,7 @@ export default function SearchPage() {
                     <Frown className="mx-auto h-12 w-12 text-muted-foreground" />
                     <h3 className="mt-4 text-lg font-semibold">No services found</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                        Try adjusting your search or filters. You can add a new service to see it here!
+                        Try adjusting your search or filters. If the issue persists, the database may be unreachable.
                     </p>
                 </div>
             )}

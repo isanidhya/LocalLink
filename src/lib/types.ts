@@ -1,7 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
-export interface Provider {
-  id?: string;
+export interface Listing {
+  id: string;
   name: string;
   serviceName: string;
   description: string;
@@ -10,15 +10,16 @@ export interface Provider {
   charges: string;
   contact: string;
   imageUrl?: string;
-  imageHint?: string;
   createdAt: Timestamp;
   userId: string;
 }
 
 export interface UserProfile {
+  uid: string;
   displayName: string;
-  email: string;
-  location: string;
-  profileCompleted: boolean;
-  createdAt: any;
+  email: string | null;
+  photoURL: string | null;
+  location?: string;
+  profileCompleted?: boolean;
+  createdAt: Timestamp;
 }

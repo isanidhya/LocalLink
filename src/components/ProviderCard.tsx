@@ -1,11 +1,11 @@
-import { Provider } from '@/lib/types';
+import { Listing } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { MapPin, Clock, Phone, Wrench, Utensils, Scissors, Hand, Briefcase } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface ProviderCardProps {
-    provider: Provider;
+    provider: Listing;
 }
 
 const getIconForService = (serviceName: string) => {
@@ -35,7 +35,6 @@ export default function ProviderCard({ provider }: ProviderCardProps) {
                         alt={provider.serviceName}
                         fill
                         className="object-cover"
-                        {...(provider.imageHint && { 'data-ai-hint': provider.imageHint })}
                     />
                 ) : (
                     <div className="h-full w-full bg-accent/50 flex items-center justify-center">
