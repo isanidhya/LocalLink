@@ -6,6 +6,7 @@ import {
   createContext,
   useContext,
   ReactNode,
+  useCallback,
 } from "react";
 import {
   onAuthStateChanged,
@@ -29,7 +30,8 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  // Add any other user-specific fields you want to store
+  location?: string;
+  profileCompleted?: boolean;
   createdAt: Date;
 }
 
@@ -39,12 +41,12 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   error: string | null;
-  isProvider: boolean; // Example of a custom claim or role
   signInWithGoogle: () => Promise<void>;
   createUser: (email: string, pass: string) => Promise<void>;
   signIn: (email: string, pass: string) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refetchUserProfile: () => Promise<void>;
 }
 
 // Create the authentication context
@@ -61,11 +63,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isProvider, setIsProvider] = useState(false); // Example state for user role
   const { toast } = useToast();
   const router = useRouter();
 
-  // Function to create or update user profile in Firestore
+  const fetchUserProfile = useCallback(async (firebaseUser: User) => {
+    const userRef = doc(db, "users", firebaseUser.uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      setUserProfile(userSnap.data() as UserProfile);
+    } else {
+      // If the profile doesn't exist, create it
+      await updateUserProfile(firebaseUser);
+      const newUserSnap = await getDoc(userRef);
+      if (newUserSnap.exists()) {
+        setUserProfile(newUserSnap.data() as UserProfile);
+      }
+    }
+  }, []);
+
+  const refetchUserProfile = useCallback(async () => {
+    if (auth.currentUser) {
+      setLoading(true);
+      await fetchUserProfile(auth.currentUser);
+      setLoading(false);
+    }
+  }, [fetchUserProfile]);
+
   const updateUserProfile = async (
     firebaseUser: User,
     additionalData?: Record<string, any>
@@ -74,7 +97,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // New user, create profile
       const { displayName, email, photoURL } = firebaseUser;
       const createdAt = new Date();
       try {
@@ -84,6 +106,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           displayName,
           photoURL,
           createdAt,
+          location: '',
+          profileCompleted: false,
           ...additionalData,
         });
       } catch (err) {
@@ -93,27 +117,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Handle user state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
-        // Here you would also fetch the user's custom claims or role
-        // For example, from an ID token or a separate Firestore document
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          setUserProfile(userSnap.data() as UserProfile);
-        } else {
-          // If the profile doesn't exist, it might be a new sign-up
-          // The profile will be created on sign-up, but you can handle it here too
-          await updateUserProfile(firebaseUser); // Create profile if it's missing
-          const newUserSnap = await getDoc(userRef);
-          if (newUserSnap.exists()) {
-            setUserProfile(newUserSnap.data() as UserProfile);
-          }
-        }
+        await fetchUserProfile(firebaseUser);
       } else {
         setUser(null);
         setUserProfile(null);
@@ -122,15 +131,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [fetchUserProfile]);
 
-  // Sign in with Google
   const signInWithGoogle = async () => {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      await updateUserProfile(result.user); // Create/update profile on sign-in
+      await updateUserProfile(result.user);
       toast({ title: "Success!", description: "Signed in with Google." });
       router.push("/");
     } catch (err) {
@@ -146,12 +154,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
   
-  // Create user with email and password
   const createUser = async (email: string, pass: string) => {
     setLoading(true);
     try {
         const result = await createUserWithEmailAndPassword(auth, email, pass);
-        await updateUserProfile(result.user); // Create profile on sign-up
+        await updateUserProfile(result.user);
         toast({ title: "Account Created!", description: "You are now logged in." });
         router.push("/");
     } catch (err) {
@@ -174,7 +181,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  // Sign in with email and password
   const signIn = async (email: string, pass: string) => {
     setLoading(true);
     try {
@@ -205,7 +211,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  // Log out
   const logOut = async () => {
     await signOut(auth);
     setUser(null);
@@ -213,15 +218,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     router.push("/login");
   };
   
-  // Reset password
   const resetPassword = async (email: string) => {
       setLoading(true);
       try {
           await sendPasswordResetEmail(auth, email);
           toast({ title: "Password Reset", description: "Password reset link sent to your email." });
       } catch (err) {
-          console.error(err);
-          setError("Failed to send reset email.");
+          console.error('Error sending reset email:', err);
+          if (err instanceof FirebaseError) {
+              toast({ variant: "destructive", title: "Error", description: "Could not send reset email. Please check the address."});
+          }
       } finally {
           setLoading(false);
       }
@@ -232,18 +238,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     userProfile,
     loading,
     error,
-    isProvider,
     signInWithGoogle,
     createUser,
     signIn,
     logOut,
     resetPassword,
+    refetchUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

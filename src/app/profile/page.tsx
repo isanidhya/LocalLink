@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, UserProfile } from '@/hooks/use-auth';
 import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { firestore, auth } from '@/lib/firebase';
-import { Provider } from '@/lib/types';
+import { auth, db } from '@/lib/firebase';
+import { Listing } from '@/lib/types';
 import ProviderCard from '@/components/ProviderCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
     const { user, userProfile, loading: authLoading, refetchUserProfile } = useAuth();
     const router = useRouter();
-    const [listings, setListings] = useState<Provider[]>([]);
+    const [listings, setListings] = useState<Listing[]>([]);
     const [listingsLoading, setListingsLoading] = useState(true);
     const [formSubmitting, setFormSubmitting] = useState(false);
     const { toast } = useToast();
@@ -65,12 +65,12 @@ export default function ProfilePage() {
                 setListingsLoading(true);
                 try {
                     const q = query(
-                        collection(firestore, 'providers'),
+                        collection(db, 'listings'),
                         where('userId', '==', user.uid),
                         orderBy('createdAt', 'desc')
                     );
                     const querySnapshot = await getDocs(q);
-                    const userListings = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Provider));
+                    const userListings = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Listing));
                     setListings(userListings);
                 } catch (error) {
                     console.error("Error fetching user listings:", error);
@@ -83,14 +83,12 @@ export default function ProfilePage() {
     }, [user]);
 
     const onSubmit = async (data: ProfileFormValues) => {
-        if (!user) return;
+        if (!user || !auth.currentUser) return;
         setFormSubmitting(true);
         try {
-            if(auth.currentUser) {
-              await updateProfile(auth.currentUser, { displayName: data.displayName });
-            }
+            await updateProfile(auth.currentUser, { displayName: data.displayName });
             
-            const userRef = doc(firestore, 'users', user.uid);
+            const userRef = doc(db, 'users', user.uid);
             await updateDoc(userRef, {
                 displayName: data.displayName,
                 location: data.location,
@@ -145,7 +143,7 @@ export default function ProfilePage() {
     return (
         <div className="container mx-auto px-4 py-8">
             <h1 className="font-headline text-3xl font-bold mb-8">Your Profile</h1>
-            {!userProfile.profileCompleted && (
+            {userProfile && !userProfile.profileCompleted && (
                 <Card className="mb-8 bg-accent/20 border-accent">
                     <CardHeader>
                         <CardTitle className="text-accent-foreground">Complete Your Profile</CardTitle>
@@ -231,10 +229,10 @@ export default function ProfilePage() {
                                     <p className="mt-2 text-sm text-muted-foreground">
                                         Click the button below to offer your skills to the community!
                                     </p>
-                                    <Button asChild className="mt-4" disabled={!userProfile.profileCompleted}>
+                                    <Button asChild className="mt-4" disabled={userProfile && !userProfile.profileCompleted}>
                                         <Link href="/add-listing">Offer a Service</Link>
                                     </Button>
-                                    {!userProfile.profileCompleted && <p className="text-xs text-destructive mt-2">Please complete your profile first.</p>}
+                                    {userProfile && !userProfile.profileCompleted && <p className="text-xs text-destructive mt-2">Please complete your profile first.</p>}
                                 </div>
                             )}
                         </CardContent>
